@@ -1,11 +1,13 @@
 package gs
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 
+	"h12.me/html-query"
 	"h12.me/socks"
 )
 
@@ -14,7 +16,7 @@ type HTTP struct {
 	client *http.Client
 }
 
-func (h *HTTP) Get(uri string) WebPage {
+func (h HTTP) Get(uri string) WebPage {
 	if h.client == nil {
 		h.client = &http.Client{}
 		u, err := url.Parse(h.Proxy)
@@ -54,4 +56,10 @@ func (p WebPage) Save(file string) error {
 	_, err = f.Write(p.body)
 	c(err)
 	return nil
+}
+
+func (p WebPage) Parse() *query.Node {
+	n, err := query.Parse(bytes.NewBuffer(p.body))
+	c(err)
+	return n
 }
