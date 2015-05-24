@@ -12,13 +12,11 @@ import (
 )
 
 type HTTP struct {
-	proxy  string
 	client http.Client
 }
 
 func (h HTTP) Proxy(proxy string) HTTP {
-	h.proxy = proxy
-	u, err := url.Parse(h.proxy)
+	u, err := url.Parse(proxy)
 	c(err)
 	switch u.Scheme {
 	case "socks5":
@@ -46,6 +44,15 @@ func (h HTTP) Get(uri string) WebPage {
 type WebPage struct {
 	body []byte
 	err  error
+}
+
+func (p WebPage) Load(file string) WebPage {
+	f, err := os.Open(file)
+	c(err)
+	defer f.Close()
+	body, err := ioutil.ReadAll(f)
+	c(err)
+	return WebPage{body: body}
 }
 
 func (p WebPage) Save(file string) {
