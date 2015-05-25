@@ -2,6 +2,7 @@ package gs
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -35,6 +36,9 @@ func (h HTTP) Get(uri string) WebPage {
 	}
 	if err != nil {
 		return WebPage{err: err}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return WebPage{err: fmt.Errorf("Status Code %d", resp.StatusCode)}
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
