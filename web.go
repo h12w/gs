@@ -61,11 +61,18 @@ func (p WebPage) Load(file string) WebPage {
 
 func (p WebPage) Save(file string) {
 	c(p.err)
-	f, err := os.Create(file)
+	err := p.TrySave(file)
 	c(err)
+}
+
+func (p WebPage) TrySave(file string) error {
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
 	defer f.Close()
 	_, err = f.Write(p.body)
-	c(err)
+	return err
 }
 
 func (p WebPage) Parse() *query.Node {
