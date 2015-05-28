@@ -60,12 +60,13 @@ func (p WebPage) Load(file string) WebPage {
 }
 
 func (p WebPage) Save(file string) {
-	c(p.err)
-	err := p.TrySave(file)
-	c(err)
+	c(p.TrySave(file))
 }
 
 func (p WebPage) TrySave(file string) error {
+	if p.err != nil {
+		return p.err
+	}
 	f, err := os.Create(file)
 	if err != nil {
 		return err
