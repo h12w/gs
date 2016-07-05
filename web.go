@@ -2,11 +2,13 @@ package gs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"h12.me/html-query"
 	"h12.me/socks"
@@ -14,6 +16,7 @@ import (
 
 type HTTP struct {
 	client http.Client
+	retry  int
 }
 
 func (h HTTP) Proxy(proxy string) HTTP {
@@ -26,18 +29,38 @@ func (h HTTP) Proxy(proxy string) HTTP {
 	return h
 }
 
+func (h HTTP) Timeout(du time.Duration) HTTP {
+	h.client.Timeout = du
+	return h
+}
+
+func (h HTTP) Retry(n int) HTTP {
+	h.retry = n
+	return h
+}
+
+var (
+	ErrNotFound = errors.New("not found")
+)
+
 func (h HTTP) Get(uri string) WebPage {
 	resp, err := h.client.Get(uri)
-	for i := 0; i < 3; i++ {
-		resp, err = h.client.Get(uri)
-		if err == nil {
-			break
+	if resp == nil || resp.StatusCode != http.StatusNotFound {
+		for i := 0; i < h.retry; i++ {
+			resp, err = h.client.Get(uri)
+			if err == nil {
+				break
+			}
 		}
 	}
 	if err != nil {
 		return WebPage{err: err}
 	}
 	if resp.StatusCode != http.StatusOK {
+		switch resp.StatusCode {
+		case http.StatusNotFound:
+			return WebPage{err: ErrNotFound}
+		}
 		return WebPage{err: fmt.Errorf("Status Code %d", resp.StatusCode)}
 	}
 	defer resp.Body.Close()
