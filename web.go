@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"h12.me/html-query"
-	"h12.me/socks"
+	"h12.io/html-query"
+	"h12.io/socks"
 )
 
 type HTTP struct {
