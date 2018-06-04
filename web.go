@@ -2,6 +2,7 @@ package gs
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -99,8 +100,16 @@ func (p WebPage) TrySave(file string) error {
 	return err
 }
 
-func (p WebPage) Parse() *query.Node {
+func (p WebPage) ParseHTML() *query.Node {
 	n, err := query.Parse(bytes.NewBuffer(p.body))
 	c(err)
 	return n
+}
+
+func (p WebPage) ParseJSON(v interface{}) error {
+	return json.Unmarshal(p.body, v)
+}
+
+func (p WebPage) Body() string {
+	return string(p.body)
 }
