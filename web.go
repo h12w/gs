@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gocarina/gocsv"
 	query "h12.io/html-query"
 	"h12.io/socks"
 )
@@ -142,6 +143,10 @@ func (p WebPage) ParseHTML() *query.Node {
 
 func (p WebPage) ParseJSON(v interface{}) error {
 	return json.Unmarshal(p.body, v)
+}
+
+func (p WebPage) ParseCSV(v interface{}) error {
+	return gocsv.UnmarshalBytes(p.body, v)
 }
 
 func (p WebPage) Body() string {
