@@ -9,15 +9,19 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
+	"strings"
 	"time"
 
-	"h12.io/html-query"
+	query "h12.io/html-query"
 	"h12.io/socks"
 )
 
 type HTTP struct {
 	client http.Client
 	retry  int
+
+	cacheDir string
 }
 
 func (h HTTP) Proxy(proxy string) HTTP {
@@ -40,11 +44,33 @@ func (h HTTP) Retry(n int) HTTP {
 	return h
 }
 
+func (h HTTP) CacheDir(dir string) HTTP {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		panic(err)
+	}
+	h.cacheDir = dir
+	return h
+}
+
 var (
 	ErrNotFound = errors.New("not found")
 )
 
+func (h HTTP) cacheFilename(uri string) string {
+	if h.cacheDir == "" {
+		return ""
+	}
+	return path.Join(h.cacheDir, trimScheme(uri))
+}
+
 func (h HTTP) Get(uri string) WebPage {
+	cacheFilename := h.cacheFilename(uri)
+	if cacheFilename != "" {
+		body, err := ioutil.ReadFile(cacheFilename)
+		if err == nil {
+			return WebPage{body: body}
+		}
+	}
 	resp, err := h.client.Get(uri)
 	if resp == nil || resp.StatusCode != http.StatusNotFound {
 		for i := 0; i < h.retry; i++ {
@@ -66,6 +92,14 @@ func (h HTTP) Get(uri string) WebPage {
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err == nil && cacheFilename != "" {
+		if err := os.MkdirAll(path.Dir(cacheFilename), 0755); err != nil {
+			panic(err)
+		}
+		if err := ioutil.WriteFile(cacheFilename, body, 0644); err != nil {
+			panic(err)
+		}
+	}
 	return WebPage{body, err}
 }
 
@@ -112,4 +146,10 @@ func (p WebPage) ParseJSON(v interface{}) error {
 
 func (p WebPage) Body() string {
 	return string(p.body)
+}
+
+func trimScheme(uri string) string {
+	uri = strings.TrimPrefix(uri, "https://")
+	uri = strings.TrimPrefix(uri, "http://")
+	return uri
 }
